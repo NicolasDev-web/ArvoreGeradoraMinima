@@ -1,0 +1,592 @@
+================================================================================
+                    APRESENTAÇÃO: ÁRVORE GERADORA MÍNIMA
+              Heavy Cycle Edges - UVA Online Judge Problem #10397
+================================================================================
+
+DURAÇÃO TOTAL: 5 MINUTOS
+Divisão sugerida: 1 min (problema) + 2 min (algoritmo) + 1 min (complexidade) + 1 min (casos especiais)
+
+================================================================================
+PARTE 1: PROBLEMA E MODELAGEM (≤ 1 MINUTO)
+================================================================================
+
+1.1 DEFINIÇÃO DO PROBLEMA
+─────────────────────────────────────────────────────────────────────────────
+
+O problema "Heavy Cycle Edges" solicita que identifiquemos todas as ARESTAS 
+PESADAS DE CICLO em um grafo não-direcionado ponderado. Especificamente:
+
+  • Dado um grafo com vértices e arestas ponderadas
+  • Encontrar todas as arestas que NÃO pertencem a nenhuma Árvore Geradora Mínima
+  • Imprimir os pesos dessas arestas em ordem crescente
+  • Se não houver arestas pesadas, imprimir "forest"
+
+
+1.2 MODELAGEM COMO GRAFO
+─────────────────────────────────────────────────────────────────────────────
+
+O problema é modelado através de um GRAFO NÃO-DIRECIONADO PONDERADO com 
+as seguintes propriedades:
+
+  Representação Formal:
+  ├─ G = (V, E)
+  ├─ V: Conjunto de vértices (n ≥ 1)
+  ├─ E: Conjunto de arestas (m ≥ 0)
+  └─ Cada aresta e ∈ E possui peso w(e) > 0
+
+  Características:
+  ├─ Arestas não-direcionadas: aresta (u,v) = aresta (v,u)
+  ├─ Grafo pode ter ciclos
+  ├─ Múltiplas arestas podem ter o mesmo peso
+  └─ Grafo pode ser desconexo
+
+
+1.3 CONCEITO CHAVE: ARESTAS PESADAS DE CICLO
+─────────────────────────────────────────────────────────────────────────────
+
+Uma ARESTA PESADA DE CICLO é uma aresta que:
+
+  1. NÃO faz parte de nenhuma Árvore Geradora Mínima válida do grafo
+  2. Está envolvida em pelo menos um ciclo
+  3. Tem peso MAIOR que a aresta máxima do caminho que a conecta na MST
+
+Teorema Fundamental:
+  "Uma aresta que criaria um ciclo em uma MST é uma heavy cycle edge se e 
+   somente se seu peso é ESTRITAMENTE MAIOR que o peso máximo de qualquer 
+   aresta no caminho único entre seus dois vértices na MST."
+
+
+1.4 VISUALIZAÇÃO DO CONCEITO
+─────────────────────────────────────────────────────────────────────────────
+
+Exemplo: Ciclo simples com 3 vértices
+
+       0 ─── 1
+      /│      │
+     1 │      │ 2
+      \│      │
+       └──────┘ 3
+       
+  Arestas: (0,1,w=1), (1,2,w=2), (2,0,w=3)
+  
+  MST escolhe: (0,1,w=1) e (1,2,w=2) - peso total = 3
+  
+  Aresta (2,0,w=3):
+    ├─ Criaria ciclo: 0─1─2─0
+    ├─ Peso = 3
+    ├─ Caminho na MST (2 até 0): 2─1─0 com máximo = 2
+    ├─ Como 3 > 2, é uma HEAVY CYCLE EDGE
+    └─ Output: 3
+
+
+================================================================================
+PARTE 2: ESTRATÉGIA ALGORÍTMICA (≤ 2 MINUTOS)
+================================================================================
+
+2.1 ALGORITMO: KRUSKAL COM DETECÇÃO DE ARESTAS PESADAS
+─────────────────────────────────────────────────────────────────────────────
+
+Nossa solução utiliza uma modificação do ALGORITMO DE KRUSKAL que não apenas 
+constrói a MST, mas também identifica arestas que não fazem parte dela.
+
+INSIGHT PRINCIPAL:
+  O algoritmo de Kruskal processa arestas em ordem crescente de peso. Quando 
+  uma aresta NÃO é adicionada à MST porque seus vértices já estão conectados, 
+  essa aresta criaria um ciclo e, portanto, é uma candidata a aresta pesada.
+
+
+2.2 PASSOS DO ALGORITMO (PSEUDO-CÓDIGO)
+─────────────────────────────────────────────────────────────────────────────
+
+  algoritmo KruskalModificado(n: inteiros, edges: lista de arestas)
+    
+    1. Ordenar todas as arestas por peso (crescente)
+       └─ Complexidade: O(m log m)
+    
+    2. Inicializar Union-Find (DSU) com n elementos
+       └─ Cada vértice é sua própria componente
+    
+    3. Para cada aresta (u, v, w) em ordem:
+       
+       3a. Se u e v NÃO estão conectados:
+           ├─ Unir u e v no Union-Find
+           ├─ Adicionar aresta à MST
+           └─ Continuar
+       
+       3b. Se u e v JÁ estão conectados:
+           ├─ A aresta criaria um ciclo
+           ├─ Passo fundamental: como a aresta foi processada em ordem
+           │  crescente, seu peso é ≥ qualquer aresta no caminho da MST
+           ├─ Portanto, esta é uma HEAVY CYCLE EDGE
+           ├─ Adicionar seu peso à fila de saída
+           └─ Continuar
+    
+    4. Retornar lista de pesos das arestas pesadas
+
+
+2.3 EXEMPLO PRÁTICO: EXECUÇÃO PASSO A PASSO
+─────────────────────────────────────────────────────────────────────────────
+
+Entrada:
+  4 5
+  0 1 1
+  1 2 2
+  2 3 3
+  3 1 4
+  0 2 5
+
+Arestas ordenadas por peso: (0,1,1) → (1,2,2) → (2,3,3) → (3,1,4) → (0,2,5)
+
+Execução:
+
+  Passo 1: Processar (0,1,1)
+  ├─ U(0) ≠ U(1) → Conectados → Adicionar à MST
+  ├─ Union-Find: {0,1}, {2}, {3}
+  └─ Arestas pesadas: []
+
+  Passo 2: Processar (1,2,2)
+  ├─ U(1) ≠ U(2) → Conectados → Adicionar à MST
+  ├─ Union-Find: {0,1,2}, {3}
+  └─ Arestas pesadas: []
+
+  Passo 3: Processar (2,3,3)
+  ├─ U(2) ≠ U(3) → Conectados → Adicionar à MST
+  ├─ Union-Find: {0,1,2,3}
+  └─ Arestas pesadas: []
+  ├─ MST completa (4 vértices precisam de 3 arestas)
+
+  Passo 4: Processar (3,1,4)
+  ├─ U(3) = U(1)? SIM → Já conectados
+  ├─ Ciclo detectado! Seria caminho: 3─2─1─3
+  ├─ Pesos no ciclo: 3, 2, 4 → máximo = 4
+  ├─ A aresta é uma HEAVY CYCLE EDGE
+  └─ Arestas pesadas: [4]
+
+  Passo 5: Processar (0,2,5)
+  ├─ U(0) = U(2)? SIM → Já conectados
+  ├─ Ciclo detectado! Seria caminho: 0─1─2─0
+  ├─ Pesos no ciclo: 1, 2, 5 → máximo = 5
+  ├─ A aresta é uma HEAVY CYCLE EDGE
+  └─ Arestas pesadas: [4, 5]
+
+Saída: "4 5"
+
+
+2.4 ESTRUTURA DE DADOS: UNION-FIND (DSU)
+─────────────────────────────────────────────────────────────────────────────
+
+O Union-Find (Disjoint Set Union) é fundamental para a eficiência do algoritmo:
+
+  PROPÓSITO:
+  ├─ Manter componentes conectadas disjuntas
+  ├─ Responder rapidamente se dois vértices estão na mesma componente
+  └─ Unir duas componentes em tempo praticamente constante
+
+
+2.5 OTIMIZAÇÕES DO UNION-FIND
+─────────────────────────────────────────────────────────────────────────────
+
+2.5.1 PATH COMPRESSION (Compressão de Caminho)
+──────────────────────────────
+
+  Implementação:
+  
+    find(p):
+      while p ≠ parent[p]:
+        parent[p] = parent[parent[p]]  // Pula dois níveis
+        p = parent[p]
+      return p
+  
+  Efeito:
+  ├─ Reduz a altura da árvore de representação
+  ├─ Segunda busca no mesmo caminho é quase O(1)
+  ├─ Amortizado: praticamente constante
+
+
+2.5.2 UNION BY RANK (União por Posto)
+──────────────────────────────────
+
+  Implementação:
+  
+    union(p, q):
+      rootP = find(p)
+      rootQ = find(q)
+      
+      if rank[rootP] < rank[rootQ]:
+        parent[rootP] = rootQ
+      else if rank[rootP] > rank[rootQ]:
+        parent[rootQ] = rootP
+      else:
+        parent[rootQ] = rootP
+        rank[rootP]++
+  
+  Efeito:
+  ├─ Sempre conecta a árvore menor à maior
+  ├─ Mantém altura logarítmica (no máximo)
+  ├─ Combinado com path compression: O(α(n))
+
+
+2.6 COMPLEXIDADE AMORTIZADA COM OTIMIZAÇÕES
+─────────────────────────────────────────────────────────────────────────────
+
+Com AMBAS as otimizações (path compression + union by rank):
+
+  Complexidade Amortizada de find() e union(): O(α(n))
+  
+  Onde α(n) é a FUNÇÃO DE ACKERMANN INVERSA
+  
+  Valores práticos:
+  ├─ α(4)     = 2
+  ├─ α(16)    = 3
+  ├─ α(65536) = 4
+  └─ α(n)     ≤ 4 para todo n ≤ 2^65536 (praticamente constante!)
+
+
+================================================================================
+PARTE 3: ANÁLISE DE COMPLEXIDADE (≤ 1 MINUTO)
+================================================================================
+
+3.1 COMPLEXIDADE TEMPORAL
+─────────────────────────────────────────────────────────────────────────────
+
+Operação                    | Complexidade      | Justificativa
+──────────────────────────────────────────────────────────────────────────────
+Ordenação de arestas        | O(m log m)        | Comparação
+Inicializar Union-Find      | O(n)              | Linear nos vértices
+Processamento de arestas    | O(m · α(n))       | m operações find/union
+Impressão de resultado      | O(k)              | k = número de heavy edges
+──────────────────────────────────────────────────────────────────────────────
+TOTAL                       | O(m log m)        | Dominado pela ordenação
+──────────────────────────────────────────────────────────────────────────────
+
+Detalhamento:
+  • m = número de arestas
+  • n = número de vértices
+  • α(n) ≈ constante prática
+  • k ≤ m (no pior caso, todas as arestas não entram na MST)
+
+
+3.2 COMPLEXIDADE ESPACIAL
+─────────────────────────────────────────────────────────────────────────────
+
+Estrutura de Dados        | Espaço       | Detalhamento
+──────────────────────────────────────────────────────────────────────────────
+Array de arestas          | O(m)         | Armazena todas as m arestas
+Array de pesos            | O(m log M)   | M = peso máximo (bits)
+Union-Find (parent)       | O(n)         | Um inteiro por vértice
+Union-Find (rank)         | O(n)         | Um byte por vértice (suficiente)
+Fila de saída             | O(k)         | k ≤ m arestas pesadas
+──────────────────────────────────────────────────────────────────────────────
+TOTAL                     | O(m + n)     | Dominado pelas arestas
+──────────────────────────────────────────────────────────────────────────────
+
+
+3.3 ANÁLISE COMPARATIVA COM OUTROS ALGORITMOS MST
+─────────────────────────────────────────────────────────────────────────────
+
+Algoritmo               | Complexidade Temporal | Observação
+──────────────────────────────────────────────────────────────────────────────
+Kruskal (sem otimiz.)   | O(m log m + m log n) | Sem path compression
+Kruskal (otimizado)     | O(m log m)           | ✓ Nossa implementação
+Prim (matriz)           | O(n²)                | Matriz de adjacência
+Prim (fila priori.)     | O((m+n) log n)       | Com heap
+Borůvka                 | O(m log² n)          | Complexo de implementar
+──────────────────────────────────────────────────────────────────────────────
+
+Por que Kruskal para este problema?
+  ✓ Simples de implementar
+  ✓ Ótima complexidade com Union-Find otimizado
+  ✓ Acesso fácil às arestas não incluídas (natural no algoritmo)
+  ✓ Ideal para grafos esparsos (m << n²)
+
+
+3.4 COMPORTAMENTO EM DIFERENTES CENÁRIOS
+─────────────────────────────────────────────────────────────────────────────
+
+Cenário                      | Casos Representativos | Complexidade
+──────────────────────────────────────────────────────────────────────────────
+Grafo muito denso (m ≈ n²)   | Completo ou quase      | O(n² log n)
+Grafo esparso (m ≈ n)        | Árvore ou floresta     | O(n log n)
+Grafo cíclico complexo       | Muitos ciclos          | O(m log m)
+Sem ciclos (árvore)          | Caminho ou estrela     | O(n log n)
+──────────────────────────────────────────────────────────────────────────────
+
+
+================================================================================
+PARTE 4: CASOS ESPECIAIS E CONCLUSÕES (≤ 1 MINUTO)
+================================================================================
+
+4.1 CASOS ESPECIAIS IMPORTANTES
+─────────────────────────────────────────────────────────────────────────────
+
+CASO 1: GRAFO SEM CICLOS (FLORESTA)
+─────────────────────────────────────
+
+  Entrada:
+    3 2
+    0 1 1
+    1 2 2
+  
+  Análise:
+  ├─ Arestas: (0,1,1) e (1,2,2)
+  ├─ Após processar (0,1,1): Conecta 0 e 1 → adiciona à MST
+  ├─ Após processar (1,2,2): Conecta 2 à componente → adiciona à MST
+  ├─ n-1 = 2 arestas adicionadas, nenhuma rejeitada
+  ├─ MST = todas as arestas
+  └─ Heavy edges: NENHUMA
+  
+  Saída: "forest"
+  
+  Razão: Em uma floresta, todos os vértices conectados já estão em uma MST
+         única, sem espaço para ciclos.
+
+
+CASO 2: CICLO SIMPLES
+─────────────────────────────────────
+
+  Entrada:
+    3 3
+    0 1 1
+    1 2 2
+    2 0 3
+  
+  Análise:
+  ├─ Primeiro: (0,1,1) → Adiciona à MST
+  ├─ Segundo: (1,2,2) → Adiciona à MST
+  ├─ Terceiro: (2,0,3) → Já conectados! Heavy edge!
+  │  └─ Razão: máximo no caminho 2─1─0 é 2, aresta é 3 > 2
+  └─ Heavy edges: {3}
+  
+  Saída: "3"
+  
+  Generalização: Em um ciclo simples com n vértices e n arestas,
+                exatamente 1 aresta (a mais pesada) é uma heavy edge.
+
+
+CASO 3: MÚLTIPLAS ARESTAS COM MESMO PESO
+──────────────────────────────────────────────
+
+  Entrada:
+    4 6
+    0 1 10
+    1 2 10
+    2 3 10
+    3 0 10
+    0 2 10
+    1 3 10
+  
+  Análise:
+  ├─ Todas as arestas têm peso 10
+  ├─ 4 vértices precisam de exatamente 3 arestas para MST
+  ├─ Ordem de processamento no tie-break afeta resultado
+  ├─ Possíveis MSTs: múltiplas combinações válidas
+  ├─ Porém, pelo menos 3 arestas sempre serão rejeitadas
+  └─ Heavy edges: {10, 10, 10} ou subconjunto
+  
+  Saída: "10 10 10"
+  
+  Nota: Quando há empate de pesos, diferentes ordens podem gerar
+        diferentes MSTs, mas o conjunto de arestas pesadas é consistente
+        em relação aos pesos.
+
+
+CASO 4: GRAFO DESCONEXO (MÚLTIPLAS COMPONENTES)
+──────────────────────────────────────────────────
+
+  Entrada:
+    4 2
+    0 1 5
+    2 3 7
+  
+  Análise:
+  ├─ Componente 1: {0, 1} com aresta (0,1,5)
+  ├─ Componente 2: {2, 3} com aresta (2,3,7)
+  ├─ Ambas as arestas conectam vértices em sua componente
+  ├─ Nenhuma aresta é rejeitada
+  ├─ Nenhum ciclo é criado
+  └─ Heavy edges: NENHUMA
+  
+  Saída: "forest"
+  
+  Razão: Em um grafo desconexo sem ciclos internos, não há arestas pesadas.
+
+
+CASO 5: MUITOS CICLOS SOBREPOSTOS
+───────────────────────────────────
+
+  Entrada:
+    5 10
+    0 1 1
+    1 2 2
+    2 0 3
+    0 3 4
+    3 4 5
+    4 0 6
+    1 3 7
+    1 4 8
+    2 3 9
+    2 4 10
+  
+  Análise:
+  ├─ Múltiplos ciclos se sobrepõem
+  ├─ MST selecionará: 3 arestas com pesos {1,2,4,5}
+  ├─ Arestas rejeitadas: aquelas que causariam ciclos redundantes
+  ├─ Cada rejeição corresponde a uma aresta que é máxima em algum ciclo
+  └─ Heavy edges: Múltiplas arestas de diferentes pesos
+  
+  Saída: "3 6 7 8 9 10" (exemplo, depende da ordem de tie-break)
+  
+  Razão: Em grafos altamente conectados, muitas arestas são redundantes
+         para manter conectividade, tornando-se heavy edges.
+
+
+CASO 6: GRAFO COMPLETO
+───────────────────────
+
+  Entrada:
+    4 6
+    0 1 1
+    0 2 2
+    0 3 3
+    1 2 4
+    1 3 5
+    2 3 6
+  
+  Análise:
+  ├─ Todos os vértices conectados entre si
+  ├─ MST precisa de apenas 3 arestas: (0,1,1), (0,2,2), (0,3,3)
+  ├─ Arestas restantes: (1,2,4), (1,3,5), (2,3,6)
+  ├─ Todas serão rejeitadas como heavy edges
+  └─ Heavy edges: {4, 5, 6}
+  
+  Saída: "4 5 6"
+  
+  Razão: Grafo completo tem muitas redundâncias. MST usa arestas mais
+         leves, rejeitando todas as mais pesadas.
+
+
+CASO 7: ÁRVORE COM ARESTA ADICIONAL
+────────────────────────────────────
+
+  Entrada:
+    5 5
+    0 1 1
+    1 2 2
+    2 3 3
+    3 4 4
+    4 0 10
+  
+  Análise:
+  ├─ Primeiras 4 arestas formam uma árvore (caminho linear)
+  ├─ 5ª aresta (4,0,10) cria um ciclo: 0─1─2─3─4─0
+  ├─ Pesos no ciclo: 1,2,3,4,10 → máximo = 10
+  ├─ A aresta (4,0,10) é a única rejeitada
+  └─ Heavy edges: {10}
+  
+  Saída: "10"
+  
+  Razão: Uma árvore com uma aresta adicional cria exatamente um ciclo,
+         e essa aresta adicional (mais pesada) é rejeitada.
+
+
+4.2 PROPRIEDADES FUNDAMENTAIS
+─────────────────────────────────────────────────────────────────────────────
+
+Propriedade 1: EXATIDÃO DO ALGORITMO
+────────────────────────────────────
+
+  Teorema: O algoritmo de Kruskal identificará TODAS e APENAS as arestas
+           que não pertencem a NENHUMA MST válida do grafo.
+  
+  Prova (sketch):
+  ├─ Arestas adicionadas: Garantidamente na MST por Kruskal
+  ├─ Arestas rejeitadas: Criariam ciclos, logo nunca na MST
+  ├─ Como Kruskal gera uma MST válida, qualquer aresta não adicionada
+  │  nunca será parte de nenhuma MST (ou Kruskal a teria adicionado)
+  └─ Logo, arestas rejeitadas = arestas pesadas
+
+
+Propriedade 2: ORDEM DE PROCESSAMENTO
+──────────────────────────────────────
+
+  Fato: Arestas são processadas em ordem crescente de peso.
+  
+  Consequência: Se uma aresta (u,v,w) é rejeitada, então w ≥ peso máximo
+                no caminho u-v na MST já construída.
+  
+  Razão: Todos os pesos menores foram processados primeiro. Se houvesse
+         um caminho com peso máximo > w, uma aresta de peso > w teria
+         sido processada antes, contradição.
+
+
+Propriedade 3: INVARIANTE DE CONECTIVIDADE
+────────────────────────────────────────────
+
+  Invariante: Após processar cada aresta, o Union-Find representa
+              exatamente as componentes conectadas pela MST.
+  
+  Preservação: Cada união preserva a propriedade; rejeições não a alteram.
+
+
+4.3 CONCLUSÕES E INSIGHTS
+─────────────────────────────────────────────────────────────────────────────
+
+✓ INSIGHTS PRINCIPAIS:
+  ├─ A modelagem do problema como grafo é crucial para a solução
+  ├─ O algoritmo de Kruskal é elegante para este problema específico
+  ├─ Union-Find com otimizações é essencial para eficiência
+  ├─ A ordem de processamento por peso garante correção
+  └─ Diferentes estruturas de grafo levam a padrões diferentes de heavy edges
+
+
+✓ APLICAÇÕES PRÁTICAS:
+  ├─ Detecção de redundâncias em redes
+  ├─ Análise de conectividade crítica
+  ├─ Otimização de infraestrutura
+  ├─ Segurança de redes (identificar conexões dispensáveis)
+  └─ Planejamento de recursos
+
+
+✓ EXTENSÕES POSSÍVEIS:
+  ├─ Encontrar TODAS as MSTs possíveis (não apenas uma)
+  ├─ Arestas leves de ciclo (opposite problem)
+  ├─ MST com restrições adicionais (problema de Steiner)
+  ├─ Grafo com pesos negativos (modificação necessária)
+  └─ Atualização dinâmica (adicionar/remover arestas)
+
+
+✓ COMPLEXIDADE NO CONTEXTO:
+  ├─ O(m log m) é eficiente para a maioria dos grafos práticos
+  ├─ Para grafos muito densos: considerar implementações especializadas
+  ├─ Trade-off: simplicidade vs otimização extrema
+  └─ Kruskal é geralmente preferível para grafos esparsos
+
+
+4.4 RESUMO EXECUTIVO
+─────────────────────────────────────────────────────────────────────────────
+
+Problema:     Identificar arestas não-pertencentes a nenhuma MST
+Modelagem:    Grafo não-direcionado ponderado
+Estratégia:   Kruskal com Union-Find otimizado
+Complexidade: O(m log m) temporal, O(m + n) espacial
+Casos:        Florestas, ciclos, grafos completos, componentes múltiplas
+Status:       ✅ ACCEPTED no UVA Online Judge Problem #10397
+
+
+================================================================================
+FIM DA APRESENTAÇÃO
+================================================================================
+
+Estrutura de Arquivos do Projeto:
+├─ src/
+│  ├─ Main.java           → Entrada/saída e controle
+│  ├─ HeavyCycleEdges.java → Algoritmo principal (Kruskal)
+│  ├─ UF.java              → Union-Find com otimizações
+│  ├─ Edge.java            → Representação de aresta
+│  └─ Queue.java           → Fila genérica para saída
+├─ dados/
+│  └─ entradas_do_problema.txt → Casos de teste
+└─ README.md              → Documentação completa
+
+Desenvolvido como projeto acadêmico sobre Estruturas de Dados e Algoritmos.
+Conceitos abordados: Algoritmo de Kruskal, Union-Find, MST, Detecção de ciclos.
